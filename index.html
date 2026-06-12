@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YEDI – Pitch Materials</title>
+    <!-- Optional favicon -->
+    <link rel="icon" type="image/png" href="favicon.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fb;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header with selector buttons */
+        .selector-bar {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1rem 2rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .pdf-btn {
+            background: #f1f5f9;
+            border: none;
+            padding: 0.6rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #1e293b;
+        }
+
+        .pdf-btn:hover {
+            background: #e2e8f0;
+            transform: translateY(-1px);
+        }
+
+        .pdf-btn.active {
+            background: #0f172a;
+            color: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Viewer container – fills remaining space */
+        .viewer-container {
+            flex: 1;
+            min-height: 0;  /* flex overflow fix */
+            background: #eef2ff;
+        }
+
+        #pdf-viewer {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<div class="selector-bar">
+    <button class="pdf-btn" data-pdf="executive-summary.pdf">Executive Summary</button>
+    <button class="pdf-btn" data-pdf="business-model-canvas.pdf">Business Model Canvas</button>
+    <button class="pdf-btn" data-pdf="yedi-presentation.pdf">YEDI Presentation</button>
+</div>
+
+<div class="viewer-container">
+    <div id="pdf-viewer"></div>
+</div>
+
+<script async type="module">
+    import EmbedPDF from 'https://cdn.jsdelivr.net/npm/@embedpdf/snippet@2/dist/embedpdf.js';
+
+    let currentViewer = null;
+
+    // Function to load a PDF
+    function loadPDF(pdfFileName) {
+        const pdfUrl = `pdfs/${pdfFileName}`;
+        
+        if (currentViewer) {
+            // If viewer already exists, just change the source
+            currentViewer.load(pdfUrl);
+        } else {
+            // First time: initialize the viewer
+            currentViewer = EmbedPDF.init({
+                type: 'container',
+                target: document.getElementById('pdf-viewer'),
+                src: pdfUrl
+            });
+        }
+    }
+
+    // Set up button clicks
+    const buttons = document.querySelectorAll('.pdf-btn');
+    buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Update active button style
+            buttons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            // Load the selected PDF
+            const pdfFile = btn.getAttribute('data-pdf');
+            loadPDF(pdfFile);
+        });
+    });
+
+    // Load the first PDF by default (Executive Summary)
+    if (buttons.length) {
+        buttons[0].classList.add('active');
+        loadPDF(buttons[0].getAttribute('data-pdf'));
+    }
+</script>
+</body>
+</html>
