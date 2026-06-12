@@ -83,23 +83,29 @@
 <script async type="module">
     import EmbedPDF from 'https://cdn.jsdelivr.net/npm/@embedpdf/snippet@2/dist/embedpdf.js';
 
+    let viewerContainer = document.getElementById('pdf-viewer');
     let currentViewer = null;
 
-    // Function to load a PDF
+    // Function to load a PDF by destroying any existing viewer and creating a fresh one
     function loadPDF(pdfFileName) {
         const pdfUrl = `pdfs/${pdfFileName}`;
         
+        // Destroy the old viewer if it exists
         if (currentViewer) {
-            // If viewer already exists, just change the source
-            currentViewer.load(pdfUrl);
-        } else {
-            // First time: initialize the viewer
-            currentViewer = EmbedPDF.init({
-                type: 'container',
-                target: document.getElementById('pdf-viewer'),
-                src: pdfUrl
-            });
+            // Attempt to cleanly destroy (if the library provides a destroy method)
+            if (typeof currentViewer.destroy === 'function') {
+                currentViewer.destroy();
+            }
+            // Clear the container's inner HTML to remove any leftover DOM elements
+            viewerContainer.innerHTML = '';
         }
+        
+        // Create a brand new viewer
+        currentViewer = EmbedPDF.init({
+            type: 'container',
+            target: viewerContainer,
+            src: pdfUrl
+        });
     }
 
     // Set up button clicks
@@ -116,7 +122,7 @@
         });
     });
 
-    // Load the first PDF by default (Executive Summary)
+    // Load the first PDF by default
     if (buttons.length) {
         buttons[0].classList.add('active');
         loadPDF(buttons[0].getAttribute('data-pdf'));
