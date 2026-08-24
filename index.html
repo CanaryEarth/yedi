@@ -8,6 +8,8 @@ Hi there curious cat! If you're a developer, please contact me X@canary_earth. I
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YEDI – Pitch Materials</title>
     <link rel="icon" type="image/png" href="burd_fav.png">
+    <!-- baguetteBox.js CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/baguettebox.js/1.12.0/baguetteBox.min.css">
     <style>
         * {
             margin: 0;
@@ -33,6 +35,7 @@ Hi there curious cat! If you're a developer, please contact me X@canary_earth. I
             flex-wrap: wrap;
             justify-content: center;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            flex-shrink: 0; /* Prevent header from shrinking */
         }
 
         .pdf-btn {
@@ -63,11 +66,58 @@ Hi there curious cat! If you're a developer, please contact me X@canary_earth. I
             flex: 1;
             min-height: 0;  /* flex overflow fix */
             background: #eef2ff;
+            overflow-y: auto; /* Allow scrolling if content overflows */
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
         }
 
         #pdf-viewer {
             width: 100%;
             height: 100%;
+        }
+
+        /* Gallery grid styles */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .gallery-grid a {
+            display: block;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            background: white;
+        }
+
+        .gallery-grid a:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+
+        .gallery-grid img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .gallery-grid .caption {
+            padding: 0.75rem 1rem;
+            font-size: 0.9rem;
+            color: #334155;
+            text-align: center;
+        }
+
+        /* Hide PDF viewer by default */
+        .hidden {
+            display: none !important;
         }
     </style>
 </head>
@@ -77,60 +127,151 @@ Hi there curious cat! If you're a developer, please contact me X@canary_earth. I
     <button class="pdf-btn" data-pdf="Executive_Summary.pdf">Executive Summary</button>
     <button class="pdf-btn" data-pdf="BMC_Bucataru.pdf">Business Model Canvas</button>
     <button class="pdf-btn" data-pdf="YEDI_presentation.pdf">YEDI Presentation</button>
-    <button class="pdf-btn" data-pdf="The_Effects_of_Indoor_Carbon_Dioxide_White_Paper_Revised.pdf">White paper: CO2</button>
+    <button class="pdf-btn" id="gallery-btn">Image Gallery</button>
 </div>
 
 <div class="viewer-container">
+    <!-- PDF Viewer -->
     <div id="pdf-viewer"></div>
+    
+    <!-- Image Gallery (hidden by default) -->
+    <div id="image-gallery" class="hidden">
+        <div class="gallery-grid">
+            <a href="media/photo1.jpg">
+                <img src="media/photo1.jpg" alt="Photo 1">
+            </a>
+			<a href="media/photo2.jpg">
+                <img src="media/photo2.jpg" alt="Photo 2">
+            </a>
+            <a href="media/photo3.jpg">
+                <img src="media/photo3.jpg" alt="Photo 3">
+            </a>
+			<a href="media/photo4.jpg">
+                <img src="media/photo4.jpg" alt="Photo 4">
+            </a>
+			<a href="media/photo6.jpg">
+                <img src="media/photo6.jpg" alt="Photo 6">
+            </a>
+			<a href="media/photo7.jpg">
+                <img src="media/photo7.jpg" alt="Photo 7">
+            </a>
+            <a href="media/photo8.jpg">
+                <img src="media/photo8.jpg" alt="Photo 8">
+            </a>
+			<a href="media/photo9.jpg">
+                <img src="media/photo9.jpg" alt="Photo 9">
+            </a>
+            <a href="media/photo10.jpg">
+                <img src="media/photo10.jpg" alt="Photo 10">
+            </a>
+			<a href="media/photo11.jpg">
+                <img src="media/photo11.jpg" alt="Photo 11">
+            </a>			
+			
+            <!-- Add more images as needed -->
+        </div>
+    </div>
 </div>
 
-<script async type="module">
-    import EmbedPDF from 'https://cdn.jsdelivr.net/npm/@embedpdf/snippet@2/dist/embedpdf.js';
+<!-- baguetteBox.js JavaScript -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/baguettebox.js/1.12.0/baguetteBox.min.js" async></script>
 
-    let viewerContainer = document.getElementById('pdf-viewer');
-    let currentViewer = null;
+<script>
+    (function() {
+        // --- DOM refs ---
+        const pdfViewer = document.getElementById('pdf-viewer');
+        const imageGallery = document.getElementById('image-gallery');
+        const galleryBtn = document.getElementById('gallery-btn');
+        const pdfBtns = document.querySelectorAll('.pdf-btn:not(#gallery-btn)');
+        const allBtns = document.querySelectorAll('.pdf-btn');
 
-    // Function to load a PDF by destroying any existing viewer and creating a fresh one
-    function loadPDF(pdfFileName) {
-        const pdfUrl = `pdfs/${pdfFileName}`;
-        
-        // Destroy the old viewer if it exists
-        if (currentViewer) {
-            // Attempt to cleanly destroy (if the library provides a destroy method)
-            if (typeof currentViewer.destroy === 'function') {
-                currentViewer.destroy();
-            }
-            // Clear the container's inner HTML to remove any leftover DOM elements
-            viewerContainer.innerHTML = '';
-        }
-        
-        // Create a brand new viewer
-        currentViewer = EmbedPDF.init({
-            type: 'container',
-            target: viewerContainer,
-            src: pdfUrl
-        });
-    }
+        // --- PDF viewer logic (EmbedPDF) ---
+        let currentViewer = null;
 
-    // Set up button clicks
-    const buttons = document.querySelectorAll('.pdf-btn');
-    buttons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            // Update active button style
-            buttons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+        function loadPDF(pdfFileName) {
+            const pdfUrl = `pdfs/${pdfFileName}`;
             
-            // Load the selected PDF
-            const pdfFile = btn.getAttribute('data-pdf');
-            loadPDF(pdfFile);
-        });
-    });
+            // Show PDF viewer, hide gallery
+            pdfViewer.classList.remove('hidden');
+            imageGallery.classList.add('hidden');
 
-    // Load the first PDF by default
-    if (buttons.length) {
-        buttons[0].classList.add('active');
-        loadPDF(buttons[0].getAttribute('data-pdf'));
-    }
+            // Destroy old viewer if it exists
+            if (currentViewer) {
+                if (typeof currentViewer.destroy === 'function') {
+                    currentViewer.destroy();
+                }
+                pdfViewer.innerHTML = '';
+            }
+            
+            // Dynamically import EmbedPDF only when needed
+            import('https://cdn.jsdelivr.net/npm/@embedpdf/snippet@2/dist/embedpdf.js')
+                .then(module => {
+                    const EmbedPDF = module.default;
+                    currentViewer = EmbedPDF.init({
+                        type: 'container',
+                        target: pdfViewer,
+                        src: pdfUrl
+                    });
+                })
+                .catch(err => {
+                    console.error('Failed to load EmbedPDF:', err);
+                    pdfViewer.innerHTML = '<p style="padding:2rem;text-align:center;color:#ef4444;">Failed to load PDF viewer. Please try again.</p>';
+                });
+        }
+
+        // --- Gallery logic (baguetteBox) ---
+        function showGallery() {
+            // Show gallery, hide PDF viewer
+            imageGallery.classList.remove('hidden');
+            pdfViewer.classList.add('hidden');
+
+            // Destroy PDF viewer if it exists
+            if (currentViewer) {
+                if (typeof currentViewer.destroy === 'function') {
+                    currentViewer.destroy();
+                }
+                currentViewer = null;
+                pdfViewer.innerHTML = '';
+            }
+
+            // Initialize baguetteBox on the gallery
+            // Use a small delay to ensure DOM is ready
+            setTimeout(() => {
+                if (typeof baguetteBox !== 'undefined') {
+                    baguetteBox.run('.gallery-grid', {
+                        animation: 'slideIn',
+                        noScrollbars: true
+                    });
+                } else {
+                    console.warn('baguetteBox not loaded yet');
+                }
+            }, 100);
+        }
+
+        // --- Button event listeners ---
+        pdfBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update active button style
+                allBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const pdfFile = btn.getAttribute('data-pdf');
+                loadPDF(pdfFile);
+            });
+        });
+
+        galleryBtn.addEventListener('click', () => {
+            allBtns.forEach(b => b.classList.remove('active'));
+            galleryBtn.classList.add('active');
+            showGallery();
+        });
+
+        // --- Load default (first PDF) ---
+        if (pdfBtns.length) {
+            pdfBtns[0].classList.add('active');
+            loadPDF(pdfBtns[0].getAttribute('data-pdf'));
+        }
+    })();
 </script>
 </body>
 </html>
